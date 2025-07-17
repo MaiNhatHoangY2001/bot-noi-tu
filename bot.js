@@ -126,6 +126,7 @@ async function continueExecution() {
         const tempWord = data.toLowerCase().split('\n')
         console.log(`[OK] Loaded ${tempWord.length} words. Normalizing...`)
         global.dicData = tempWord.filter(w => w.split(' ').length == 2 && !w.includes('-') && !w.includes('(') && !w.includes(')'))
+        global.dicData = Array.from(new Set(global.dicData))
         console.log(`[OK] Normalized words. ${global.dicData.length} words remaining.`)
         // console.log(global.dicData)
     })
@@ -137,7 +138,7 @@ axios.get(contributeWordsUrl)
         const lines = res.data.toLowerCase().trim().split('\n')
         fs.writeFileSync(contributeWordsPath, lines.join('\n'))
         console.log('[OK] Saved ' + lines.length + ' contribute words to ' + contributeWordsPath)
-        global.dicData = global.dicData.concat(lines)
+        global.dicData = Array.from(new Set(global.dicData.concat(lines)))
         console.log('[WARNING] Bot dictionary now have ' + global.dicData.length + ' words')
         fs.writeFileSync(officalWordsPath, global.dicData.join('\n'))
         console.log('[OK] Saved official words to official-words.txt')
@@ -248,8 +249,8 @@ client.on('messageCreate', async message => {
         rwords.push(word)
         wordDataChannel[channel].running = true
         wordDataChannel[channel].words = rwords
-        sendMessageToChannel(`Từ bắt đầu: **${word}**`, channel)
         fs.writeFileSync(wordDataPath, JSON.stringify(wordDataChannel))
+        return word
     }
     const stopGame = (channel) => {
         wordDataChannel[channel].running = false
@@ -322,8 +323,8 @@ client.on('messageCreate', async message => {
 
     if (message.content === START_COMMAND) {
         if (!isRunning) {
-            sendMessageToChannel(`Trò chơi đã bắt đầu!`, configChannel)
-            startGame(configChannel)
+            const word = startGame(configChannel)
+            sendMessageToChannel(`Trò chơi đã bắt đầu! Từ bắt đầu: **${word}**`, configChannel)
         } else sendMessageToChannel('Trò chơi vẫn đang tiếp tục. Bạn có thể dùng `!stop`', configChannel)
         return
     } else if (message.content === STOP_COMMAND) {
@@ -337,10 +338,10 @@ client.on('messageCreate', async message => {
         }
 
         if (isRunning) {
-            sendMessageToChannel(`Đã kết thúc lượt này! Lượt mới đã bắt đầu!`, configChannel)
             initWordData(configChannel)
             stats.addRoundPlayedCount()
-            startGame(configChannel)
+            const word = startGame(configChannel)
+            sendMessageToChannel(`Đã kết thúc lượt này! Lượt mới đã bắt đầu với từ: **${word}**`, configChannel)
         } else sendMessageToChannel('Trò chơi chưa bắt đầu. Bạn có thể dùng `!start`', configChannel)
         return
     }
@@ -535,11 +536,11 @@ client.on('messageCreate', async message => {
     console.log(`[${message.guild.name}][${message.channel.name}][#${words.length}] ${tu}`)
 
     if(!checkIfHaveAnswerInDb(tu)) {
-        sendMessageToChannel(`${message.author.displayName} đã chiến thắng sau ${words.length - 1} lượt! Lượt mới đã bắt đầu!`, configChannel)
         updateRankingForUser(1, 0, 0)
         stats.addRoundPlayedCount()
         initWordData(configChannel)
-        startGame(configChannel)
+        const word = startGame(configChannel)
+        sendMessageToChannel(`${message.author.displayName} đã chiến thắng sau ${words.length - 1} lượt! Lượt mới đã bắt đầu với từ: **${word}**`, configChannel)
         return
     }
 
