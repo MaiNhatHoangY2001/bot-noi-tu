@@ -489,6 +489,7 @@ client.on('messageCreate', async message => {
         if (message.author.id === lastPlayerId) {
             message.react('❌')
             sendAutoDeleteMessageToChannel('Bạn đã trả lời lượt trước rồi, hãy đợi đối thủ!', configChannel)
+            if (message.deletable) message.delete().catch(() => {})
             return
         }
     }
